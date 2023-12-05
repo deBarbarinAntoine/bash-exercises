@@ -2,7 +2,7 @@
 
 #Created by Antoine de Barbarin, December, 5th 2023
 #This script helps to search and rename all files in a directory (current or personalized) replacing all unfitting characters for Windows environments.
-#Last modified on December, 5th 2023
+#Last modification on December, 5th 2023
 
 declare -a files
 declare -a wrongfiles
