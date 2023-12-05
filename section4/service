@@ -2,9 +2,10 @@
 #
 #Created by Antoine de Barbarin, December, 5th 2023
 #This script takes a service as parameter and checks if it exists, if it does, it checks if it is running, and if not, it turns it down.
+#Last modification on December, 5th 2023
 
 usage() {
-	echo "The command $0 accepts service name and can toggle it."
+	echo "The command $0 accepts service name and ask if you want to toggle it."
 	echo "Add -h or --help parameters to view this help."
 }
 
@@ -43,7 +44,7 @@ then
     exit 1
 elif  systemctl list-unit-files --type service | grep -q "$1"
 then
-    if [[ $(systemctl is-active "$1") ]]
+    if systemctl is-active --quiet "$1"
     then
         while [[ ! $answer =~ ^[YyNn]$ ]]
         do

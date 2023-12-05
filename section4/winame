@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+
+#Created by Antoine de Barbarin, December, 5th 2023
+#This script helps to search and rename all files in a directory (current or personalized) replacing all unfitting characters for Windows environments.
+#Last modified on December, 5th 2023
+
+declare -a files
+declare -a wrongfiles
+
+usage() {
+    echo
+    echo "The command $(basename "$0") helps find and rename all files in a directory replacing all unfitting characters for a Windows environment."
+    echo
+    echo "Usage: $(basename "$0") [-h] | [-i] | [-d path/to/directory] ([-f] | [-r])"
+    printf "\t%-22s  %s\n" "-d [path/to/directory]" "operates the program in a specific directory (relative or absolute path)."
+    printf "\t%-22s  %s\n" "-f" "search mode: finds all files unfitting for a Windows environment."
+    printf "\t%-22s  %s\n" "-h" "prints this help."
+    printf "\t%-22s  %s\n" "-i" "interactive mode: the program will automatically ask where to operate and what to do."
+    printf "\t%-22s  %s\n" "-r" "replace mode: replaces all unfitting characters with '-' in all files present in the current or specific directory."
+    echo
+}
+
+join() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
+newpath() {
+    local i dirnames rootpath=$(pwd)
+    declare -i i=0
+    declare -a dirnames
+    IFS="/" read -ra dirnames <<< "$directory"
+    for dir in "${dirnames[@]}"
+    do
+      if [[ $dir =~ ^\.\.$ ]]
+      then
+        rootpath="$(dirname "$rootpath")"
+      else
+        break
+      fi
+      ((i++))
+    done
+    dirnames=("${dirnames[*]:i}")
+    directory=$rootpath"/"$(join / "${dirnames[@]}")
+}
+
+getdir() {
+    case $directory in
+       /*) ;;
+       *) newpath ;;
+    esac
+    directory=${directory%*/}
+    if test -d "$directory"
+    then
+    echo "Your custom directory is $directory !"
+    else
+      echo "Error: invalid directory!"
+      exit 1
+    fi
+}
+
+getfiles() {
+    local file dir=$directory"/*"
+    for file in $dir
+    do files+=("$file")
+    done
+#    echo "There is/are ${#files[*]} files in $directory"
+#    for file in "${files[@]}"
+#    do echo "$(basename "$file")"
+#    done
+}
+
+findwrongfiles() {
+    for file in "${files[@]}"
+    do
+      if [[ "$(basename $file)" =~ [\<\>\:\"\/\\\|\?\*\ ] ]]
+      then wrongfiles+=("$(basename "$file")")
+      fi
+    done
+}
+
+printwrongfiles() {
+    if [[ ${#wrongfiles[@]} -gt '0' ]]
+    then
+      echo "Unfitting filenames are:"
+      for file in "${wrongfiles[@]}"
+      do echo -e "\t$file"
+      done
+    else
+      echo "There are no unfitting filenames in $directory"
+      exit 0
+    fi
+}
+
+renamedirs() {
+    for file in "${wrongfiles[@]}"
+    do
+      local newname
+      newname="$(echo "$(echo "$file" | sed 's+[\<\>\:\"\/\\\|\?\*\ ]+-+g')")"
+      mv "$directory""/""$file" "$directory""/""$newname"
+      echo "Changed "$file" to "$newname"..."
+    done
+      echo "All files have been renamed successfully!"
+    exit 0
+}
+
+while getopts ":d:fhir" arg ; do
+    case ${arg} in
+      d) customdir='true'; directory="${OPTARG}";;
+      f) search='true';;
+      h) usage; exit 0;;
+      i) interactive='true';;
+      r) search='true'; replace='true';;
+      ?) echo -e "\aInvalid argument: -${OPTARG}"; usage; exit 1;;  # Unknown argument!
+    esac
+done
+
+if [[ $interactive ]]
+then
+    read -p "In which directory do you want to operate? [default: current dir] " directory
+    getdir
+    findloop='true'
+    while $findloop
+    do
+      read -p "Do you want to search for unfitting filenames? [Y/n] " fanswer
+      getfiles
+      case $fanswer in
+        [Yy]|"" ) findwrongfiles && printwrongfiles; findloop='false';;
+        [Nn] ) echo "Aborted operation"; exit 0;;
+      esac
+    done
+    while true
+    do
+      read -p "Do you want to rename all ${#wrongfiles[@]} filenames replacing unfitting characters with '-'? [Y/n] " ranswer
+      case $ranswer in
+        [Yy]|"" ) renamedirs;;
+        [Nn] ) echo "Aborted operation"; exit 0;;
+      esac
+    done
+else
+    if [[ $customdir ]]; then getdir
+    else directory=$(pwd); echo "Your directory is $directory !"
+    fi
+    getfiles
+    if [[ $search ]]; then findwrongfiles && printwrongfiles; fi
+    if [[ $replace ]]; then renamedirs; fi
+fi
