@@ -53,7 +53,8 @@ getdir() {
     directory=${directory%*/}
     if test -d "$directory"
     then
-    echo "Your custom directory is $directory !"
+    echo "Your custom directory is $directory"
+    echo
     else
       echo "Error: invalid directory!"
       exit 1
@@ -87,6 +88,7 @@ printwrongfiles() {
       for file in "${wrongfiles[@]}"
       do echo -e "\t$file"
       done
+      echo
     else
       echo "There are no unfitting filenames in $directory"
       exit 0
@@ -101,6 +103,7 @@ renamedirs() {
       mv "$directory""/""$file" "$directory""/""$newname"
       echo "Changed "$file" to "$newname"..."
     done
+      echo
       echo "All files have been renamed successfully!"
     exit 0
 }
@@ -140,7 +143,7 @@ then
     done
 else
     if [[ $customdir ]]; then getdir
-    else directory=$(pwd); echo "Your directory is $directory !"
+    else directory=$(pwd); echo "Your directory is $directory"
     fi
     getfiles
     if [[ $search ]]; then findwrongfiles && printwrongfiles; fi
