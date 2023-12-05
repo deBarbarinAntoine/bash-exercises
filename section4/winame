@@ -123,11 +123,11 @@ if [[ $interactive ]]
 then
     read -p "In which directory do you want to operate? [default: current dir] " directory
     getdir
+    getfiles
     findloop='true'
     while $findloop
     do
       read -p "Do you want to search for unfitting filenames? [Y/n] " fanswer
-      getfiles
       case $fanswer in
         [Yy]|"" ) findwrongfiles && printwrongfiles; findloop='false';;
         [Nn] ) echo "Aborted operation"; exit 0;;
