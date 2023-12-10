@@ -18,6 +18,7 @@ menu() {
   init
   play
 }
+
 init() {
   declare -i -g speed=1
   declare -i -g score=0
@@ -201,8 +202,7 @@ right() {
 
 bottom() {
   # Optional but useful... to do last.
-  echo "bottom..."
-  echo "${fig[@]}"
+  true
 }
 
 rotate() {
