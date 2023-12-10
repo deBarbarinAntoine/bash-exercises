@@ -15,24 +15,26 @@ menu() {
     esac
   done
   echo; echo; echo; echo
+  init
   play
 }
-
-  declare -i speed=1
-  declare -i score=0
-  declare -i lines=0
+init() {
+  declare -i -g speed=1
+  declare -i -g score=0
+  declare -i -g lines=0
+  declare -g endgame='false'
 
   # w_game: y factor(to emulate a 2d array with [y*w_game+x]) for gamearea and similar.
-  declare -i w_game=16
+  declare -i -g w_game=16
   # w_fig: y factor(to emulate a 2d array with [y*w_fig+x]) for figures.
-  declare -i w_fig=5
+  declare -i -g w_fig=5
 
-  declare -a i
+  declare -a -g i
   for y in {0..3}; do
     i[y*w_fig+0]="█"
   done
 
-  declare -a t
+  declare -a -g t
   t[0*w_fig+0]=" "
   t[0*w_fig+1]="█"
   t[0*w_fig+2]=" "
@@ -40,14 +42,14 @@ menu() {
     t[1*w_fig+x]="█"
   done
 
-  declare -a o
+  declare -a -g o
   for y in {0..1}; do
     for x in {0..1}; do
       o[y*w_fig+x]="█"
     done
   done
 
-  declare -a s
+  declare -a -g s
   s[0*w_fig+0]="█"
   s[0*w_fig+1]=" "
   s[1*w_fig+0]="█"
@@ -55,7 +57,7 @@ menu() {
   s[2*w_fig+0]=" "
   s[2*w_fig+1]="█"
 
-  declare -a n
+  declare -a -g n
   n[0*w_fig+0]=" "
   n[0*w_fig+1]="█"
   n[1*w_fig+0]="█"
@@ -63,7 +65,7 @@ menu() {
   n[2*w_fig+0]="█"
   n[2*w_fig+1]=" "
 
-  declare -a l
+  declare -a -g l
   l[0*w_fig+0]="█"
   l[0*w_fig+1]=" "
   l[1*w_fig+0]="█"
@@ -71,7 +73,7 @@ menu() {
   l[2*w_fig+0]="█"
   l[2*w_fig+1]="█"
 
-  declare -a r
+  declare -a -g r
   r[0*w_fig+0]="█"
   r[0*w_fig+1]="█"
   r[1*w_fig+0]="█"
@@ -79,48 +81,49 @@ menu() {
   r[2*w_fig+0]="█"
   r[2*w_fig+1]=" "
 
-  declare -i i_length_y=4
-  declare -i i_length_x=1
+  declare -i -g i_length_y=4
+  declare -i -g i_length_x=1
 
-  declare -i t_length_y=2
-  declare -i t_length_x=3
+  declare -i -g t_length_y=2
+  declare -i -g t_length_x=3
 
-  declare -i o_length_y=2
-  declare -i o_length_x=2
+  declare -i -g o_length_y=2
+  declare -i -g o_length_x=2
 
-  declare -i s_length_y=3
-  declare -i s_length_x=2
+  declare -i -g s_length_y=3
+  declare -i -g s_length_x=2
 
-  declare -i n_length_y=3
-  declare -i n_length_x=2
+  declare -i -g n_length_y=3
+  declare -i -g n_length_x=2
 
-  declare -i l_length_y=3
-  declare -i l_length_x=2
+  declare -i -g l_length_y=3
+  declare -i -g l_length_x=2
 
-  declare -i r_length_y=3
-  declare -i r_length_x=2
+  declare -i -g r_length_y=3
+  declare -i -g r_length_x=2
 
-  declare -a fig
+  declare -a -g fig
   for idx in "${!s[@]}"; do
     fig[idx]=${s[idx]}
   done
 
-  declare -i fig_length_y=3
-  declare -i fig_length_x=2
+  declare -i -g fig_length_y=3
+  declare -i -g fig_length_x=2
 
-  declare -i line=0
-  declare -i column=7
-  declare -i figpos_x=$column
-  declare -i figpos_y=$line
+  declare -i -g line=0
+  declare -i -g column=7
+  declare -i -g figpos_x=$column
+  declare -i -g figpos_y=$line
 
-  declare -a gamearea
-  declare -a fixedfigsarea
+  declare -a -g gamearea
+  declare -a -g fixedfigsarea
   for y in {0..19}; do
     for x in {0..15}; do
       gamearea[y*w_game+x]=" "
       fixedfigsarea[y*w_game+x]=" "
     done
   done
+}
 
 cleargamearea() {
   for y in {0..19}; do
@@ -231,6 +234,35 @@ rotate() {
   fi
 }
 
+checkline() {
+  for ((y=19; y >= 0; y--)); do
+  local is_full='true'
+    for x in {0..15}; do
+      if [[ ${fixedfigsarea[y*w_game+x]} != "█" ]]; then
+        is_full='false'
+      fi
+    done
+    if $is_full; then
+      (( lines++ ))
+      (( score+=5 ))
+      for ((y_fall=$y; y_fall > 0; y_fall--)); do
+        for x_fall in {0..15}; do
+          fixedfigsarea[y_fall*w_game+x_fall]=${fixedfigsarea[(y_fall-1)*w_game+x_fall]}
+        done
+      done
+      (( y++ ))
+    fi
+  done
+}
+
+check_endgame() {
+  for x in {0..15}; do
+    if [[ ${fixedfigsarea[0*w_game+x]} == "█" ]]; then
+      endgame='true'
+    fi
+  done
+}
+
 down() {
   declare -i bottom_pos=$figpos_y+$fig_length_y-1
   declare -ai bottom_per_x
@@ -252,8 +284,11 @@ down() {
   if [ $bottom_pos -lt 19 ] && $isfalling; then
     (( figpos_y++ ))
     else
-      fixedfigsarea=("${gamearea[@]}")
-      #checkline;
+      for idx in "${!gamearea[@]}"; do
+        fixedfigsarea[idx]=${gamearea[idx]}
+      done
+      checkline
+      check_endgame
       newfig
   fi
 }
@@ -273,10 +308,10 @@ printfig() {
 }
 
 displaygame() {
-  echo "##################### TETRIS #####################"
+  echo "####################### TETRIS #######################"
   echo
-  echo "Thorgan     Use [W] [A] [S] [D] to move the pieces"
-  echo
+  echo "Thorgan       Use [W] [A] [S] [D] to move the pieces"
+  printf "Score: %-5s  Lines: %-5s" $score $lines
   echo
   for y in {0..19}; do
     echo -n "░░░░░░░░░░░░░░░░░░░▒"
@@ -291,7 +326,9 @@ displaygame() {
 
 refresh() {
   cleargamearea
-  gamearea=("${fixedfigsarea[@]}")
+  for idx in "${!fixedfigsarea[@]}"; do
+    gamearea[idx]=${fixedfigsarea[idx]}
+  done
   printfig
   clear
   displaygame
@@ -307,8 +344,22 @@ play(){
       w) rotate;;
     esac
     down
+    if $endgame; then
+      break
+    fi
     refresh
   done
+  clear
+  echo
+  echo
+  echo
+  if ! toilet -t -f smblock --metal "You lost!"; then
+    echo "You lost!"
+  fi
+  sleep 3s
+  echo
+  echo
+  menu
 }
 
 menu
