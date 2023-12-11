@@ -1,16 +1,43 @@
 #!/usr/bin/env bash
 
+quit() {
+  if ! command -v figlet &> /dev/null; then
+  local message="Bye bye!"
+  declare -i margin=($(tput cols)-${#message})/2
+  if [ $margin -lt 0 ]; then margin=0; fi
+  echo; echo
+  printf "%*s$message%*s\n" $margin ""
+  echo; echo
+  else
+    echo; echo
+    figlet -t -c "Bye bye!"
+    echo; echo
+  fi
+  exit 0
+}
+
 menu() {
   while true; do
-    echo "##### Principal Menu #####"
+    local columns=$(tput cols)
+    local title="############ Principal Menu ############"
+    local menu_opt1="1. New Game"
+    local menu_opt2="2. Quit"
+    local menu_prompt="   What do you want to do? [New Game]"
+    declare -i margin=($columns-${#title})/2
+    if [ $margin -lt 0 ]; then margin=0; fi
+    clear
     echo
-    echo "1. New Game"
-    echo "2. Quit"
     echo
-    read -s -r -n 1 -p "What do you want to do? [New Game]" input
+    printf "%*s%s%*s\n" $margin "" "$title" $margin ""
+    echo
+    printf "%*s%s%*s\n" $margin "" "$menu_opt1" $margin ""
+    printf "%*s%s%*s\n" $margin "" "$menu_opt2" $margin ""
+    echo
+    menu_prompt=$(printf "%*s%s%*s\n" $margin "" "$menu_prompt" $margin "")
+    read -s -r -n 1 -p "$menu_prompt"  input
     case $input in
       [1] | "" ) break;;
-      [2] ) echo "Bye bye!"; exit 0;;
+      [2] ) quit;;
       * ) ;;
     esac
   done
@@ -162,7 +189,7 @@ left() {
     declare -ai left_per_y
     for ((y=0; y < fig_length_y; y++)); do
       for ((x=fig_length_x-1; x >= 0; x--)); do
-        if [[ ${fig[y*w_fig+x]} == "█" ]]; then
+        if [[ ${fig[y*w_fig+x]} =~ █ ]]; then
           left_per_y[y]=$x
         fi
       done
@@ -209,8 +236,36 @@ right() {
 }
 
 bottom() {
-  # Optional but useful... to do last.
-  true
+  declare -i bottom_pos=$figpos_y+$fig_length_y-1
+  declare -ai bottom_per_x
+  for ((y=0; y < fig_length_y; y++)); do
+    for ((x=0; x < fig_length_x; x++)); do
+      if [[ ${fig[y*w_fig+x]} =~ █ ]]; then
+        bottom_per_x[x]=$y
+      fi
+    done
+  done
+  local isfalling='true'
+  while [ $bottom_pos -lt 19 ] && $isfalling; do
+    for ((ind=0;ind < ${#bottom_per_x[@]}; ind++)); do
+      declare -i y=${bottom_per_x[ind]}+$figpos_y+1
+      declare -i x=$figpos_x+$ind
+      if [[ ${gamearea[y*w_game+x]} =~ █ ]]; then
+        isfalling='false'
+      fi
+    done
+    if $isfalling; then
+      (( figpos_y++ ))
+      bottom_pos=$figpos_y+$fig_length_y-1
+    refresh
+    fi
+  done
+  for idx in "${!gamearea[@]}"; do
+    fixedfigsarea[idx]=${gamearea[idx]}
+  done
+  checkline
+  check_endgame
+  newfig
 }
 
 rotate() {
@@ -316,20 +371,24 @@ printfig() {
 }
 
 displaygame() {
-  echo "####################### TETRIS #######################"
+  declare -i tetris_width=56
+  declare -i term_width=$(tput cols)
+  declare -i margin=($term_width-$tetris_width)/2
+  if [ $margin -lt 0 ]; then margin=0; fi
+  printf "%*s######################## TETRIS ########################%*s\n" $margin ""
   echo
-  echo "Thorgan       Use [W] [A] [S] [D] to move the pieces"
-  printf "Score: %-5s  Lines: %-5s" $score $lines
+  printf "%*sThorgan       Use [W] [A] [S] [D] to move the pieces%*s\n" $margin ""
+  printf "%*sScore: %-5s  Lines: %-5s%*s\n" $margin "" $score $lines $margin ""
   echo
   for y in {0..19}; do
-    echo -n "░░░░░░░░░░░░░░░░░░░▒"
+    printf "%*s░░░░░░░░░░░░░░░░░░░▒" $margin ""
     for x in {0..15}; do
       echo -n -e "${gamearea[y*w_game+x]}"
     done
-    echo "▒░░░░░░░░░░░░░░░░░░░"
+    printf "▒░░░░░░░░░░░░░░░░░░░%*s\n" $margin ""
   done
-  echo "░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░"
-  echo "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░"
+  printf "%*s░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░%*s\n" $margin ""
+  printf "%*s░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░%*s\n" $margin ""
 }
 
 refresh() {
@@ -343,6 +402,13 @@ refresh() {
 }
 
 pause() {
+  declare -i margin=($(tput cols)-11)/2
+  if [ $margin -lt 0 ]; then margin=0; fi
+  if ! command -v figlet &> /dev/null; then
+    printf "%*s\033[5mGame paused\033[0m%*s\n" $margin ""
+  else
+    figlet -t -c "Game paused"
+  fi
   while true; do
     read -r -s -n 1 input
     case $input in
@@ -359,7 +425,7 @@ play(){
       d) right;;
       s) bottom;;
       w) rotate;;
-      p) echo; echo "Game paused"; pause;;
+      p) echo; pause;;
     esac
     down
     if $endgame; then
@@ -371,10 +437,34 @@ play(){
   echo
   echo
   echo
-  if ! toilet -t -f smblock --metal "You lost!"; then
-    echo "You lost!"
+  if ! command -v figlet &> /dev/null; then
+    local title="You lost!"
+    local message="your score was $score!"
+    local prompt="Press [M] to return to the menu"
+    declare -i margin_title=($(tput cols)-${#title})/2
+    declare -i margin_message=($(tput cols)-${#message})/2
+    declare -i margin_prompt=($(tput cols)-${#prompt})/2
+    printf "%*s$title%*s" $margin_title ""
+    echo
+    printf "%*s$message%*s" $margin_message ""
+    echo
+  else
+    figlet -t -c "You lost!"
+    echo
+    figlet -t -c "your score was $score!"
+    echo
+    echo
+    echo
+    echo
   fi
-  sleep 3s
+  echo
+  printf "%*s$prompt%*s" $margin_prompt ""
+  while true; do
+    read -r -s -n 1 input
+    case $input in
+      [Mm]) break;;
+    esac
+  done
   echo
   echo
   menu
