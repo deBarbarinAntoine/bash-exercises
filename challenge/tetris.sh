@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Game created by Thorgan on December, 8th 2023
+# This is a bash version of Tetris made to learn bash scripting during a weekend.
+# Last modification made on December, 11th 2023
+
 quit() {
   if ! command -v figlet &> /dev/null; then
   local message="Bye bye!"
@@ -26,8 +30,7 @@ menu() {
     declare -i margin=($columns-${#title})/2
     if [ $margin -lt 0 ]; then margin=0; fi
     clear
-    echo
-    echo
+    echo; echo
     printf "%*s%s%*s\n" $margin "" "$title" $margin ""
     echo
     printf "%*s%s%*s\n" $margin "" "$menu_opt1" $margin ""
@@ -138,11 +141,6 @@ init() {
   declare -i -g r_length_y=3
   declare -i -g r_length_x=2
 
-  declare -a -g fig
-  for idx in "${!s[@]}"; do
-    fig[idx]=${s[idx]}
-  done
-
   declare -i -g fig_length_y=3
   declare -i -g fig_length_x=2
 
@@ -150,6 +148,9 @@ init() {
   declare -i -g column=7
   declare -i -g figpos_x=$column
   declare -i -g figpos_y=$line
+
+  declare -a -g fig
+  newfig
 
   declare -a -g gamearea
   declare -a -g fixedfigsarea
@@ -417,6 +418,41 @@ pause() {
   done
 }
 
+end() {
+  clear
+  echo; echo; echo
+  local prompt="Press [M] to return to the menu"
+  declare -i margin_prompt=($(tput cols)-${#prompt})/2
+  if [ $margin_prompt -lt 0 ]; then margin_prompt=0; fi
+  if ! command -v figlet &> /dev/null; then
+    local title="You lost!"
+    local message="your score was $score!"
+    declare -i margin_title=($(tput cols)-${#title})/2
+    if [ $margin_title -lt 0 ]; then margin_title=0; fi
+    declare -i margin_message=($(tput cols)-${#message})/2
+    if [ $margin_message -lt 0 ]; then margin_message=0; fi
+    printf "%*s$title%*s" $margin_title ""
+    echo
+    printf "%*s$message%*s" $margin_message ""
+    echo
+  else
+    figlet -t -c "You lost!"
+    echo
+    figlet -t -c "your score was $score!"
+    echo; echo
+  fi
+  echo
+  printf "%*s$prompt%*s" $margin_prompt ""
+  while true; do
+    read -r -s -n 1 input
+    case $input in
+      [Mm]) break;;
+    esac
+  done
+  echo; echo
+  menu
+}
+
 play(){
   while true; do
     read -r -s -n 1 -t 0.7 input
@@ -433,41 +469,7 @@ play(){
     fi
     refresh
   done
-  clear
-  echo
-  echo
-  echo
-  if ! command -v figlet &> /dev/null; then
-    local title="You lost!"
-    local message="your score was $score!"
-    local prompt="Press [M] to return to the menu"
-    declare -i margin_title=($(tput cols)-${#title})/2
-    declare -i margin_message=($(tput cols)-${#message})/2
-    declare -i margin_prompt=($(tput cols)-${#prompt})/2
-    printf "%*s$title%*s" $margin_title ""
-    echo
-    printf "%*s$message%*s" $margin_message ""
-    echo
-  else
-    figlet -t -c "You lost!"
-    echo
-    figlet -t -c "your score was $score!"
-    echo
-    echo
-    echo
-    echo
-  fi
-  echo
-  printf "%*s$prompt%*s" $margin_prompt ""
-  while true; do
-    read -r -s -n 1 input
-    case $input in
-      [Mm]) break;;
-    esac
-  done
-  echo
-  echo
-  menu
+  end
 }
 
 menu
