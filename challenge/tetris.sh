@@ -20,6 +20,14 @@ menu() {
 }
 
 init() {
+  red="\033[31m"
+  green="\033[32m"
+  brown="\033[33m"
+  blue="\033[34m"
+  purple="\033[35m"
+  cyan="\033[36m"
+  fmt="\033[0m"
+
   declare -i -g speed=1
   declare -i -g score=0
   declare -i -g lines=0
@@ -32,47 +40,47 @@ init() {
 
   declare -a -g i
   for y in {0..3}; do
-    i[y*w_fig+0]="█"
+    i[y*w_fig+0]=$red"█"$fmt
   done
 
   declare -a -g t
   t[0*w_fig+0]=" "
-  t[0*w_fig+1]="█"
+  t[0*w_fig+1]=$green"█"$fmt
   t[0*w_fig+2]=" "
   for x in {0..2}; do
-    t[1*w_fig+x]="█"
+    t[1*w_fig+x]=$green"█"$fmt
   done
 
   declare -a -g o
   for y in {0..1}; do
     for x in {0..1}; do
-      o[y*w_fig+x]="█"
+      o[y*w_fig+x]=$brown"█"$fmt
     done
   done
 
   declare -a -g s
-  s[0*w_fig+0]="█"
+  s[0*w_fig+0]=$blue"█"$fmt
   s[0*w_fig+1]=" "
-  s[1*w_fig+0]="█"
-  s[1*w_fig+1]="█"
+  s[1*w_fig+0]=$blue"█"$fmt
+  s[1*w_fig+1]=$blue"█"$fmt
   s[2*w_fig+0]=" "
-  s[2*w_fig+1]="█"
+  s[2*w_fig+1]=$blue"█"$fmt
 
   declare -a -g n
   n[0*w_fig+0]=" "
-  n[0*w_fig+1]="█"
-  n[1*w_fig+0]="█"
-  n[1*w_fig+1]="█"
-  n[2*w_fig+0]="█"
+  n[0*w_fig+1]=$purple"█"$fmt
+  n[1*w_fig+0]=$purple"█"$fmt
+  n[1*w_fig+1]=$purple"█"$fmt
+  n[2*w_fig+0]=$purple"█"$fmt
   n[2*w_fig+1]=" "
 
   declare -a -g l
-  l[0*w_fig+0]="█"
+  l[0*w_fig+0]=$cyan"█"$fmt
   l[0*w_fig+1]=" "
-  l[1*w_fig+0]="█"
+  l[1*w_fig+0]=$cyan"█"$fmt
   l[1*w_fig+1]=" "
-  l[2*w_fig+0]="█"
-  l[2*w_fig+1]="█"
+  l[2*w_fig+0]=$cyan"█"$fmt
+  l[2*w_fig+1]=$cyan"█"$fmt
 
   declare -a -g r
   r[0*w_fig+0]="█"
@@ -163,7 +171,7 @@ left() {
     for ((ind=0;ind < ${#left_per_y[@]}; ind++)); do
       declare -i y=$figpos_y+$ind
       declare -i x=${left_per_y[ind]}+$figpos_x-1
-      if [[ ${gamearea[y*w_game+x]} == "█" ]]; then
+      if [[ ${gamearea[y*w_game+x]} =~ █ ]]; then
         isgliding='false'
       fi
     done
@@ -180,7 +188,7 @@ right() {
     declare -ai right_per_y
     for ((y=0; y < fig_length_y; y++)); do
       for ((x=0; x < fig_length_x; x++)); do
-        if [[ ${fig[y*w_fig+x]} == "█" ]]; then
+        if [[ ${fig[y*w_fig+x]} =~ █ ]]; then
           right_per_y[y]=$x
         fi
       done
@@ -189,7 +197,7 @@ right() {
     for ((ind=0;ind < ${#right_per_y[@]}; ind++)); do
       declare -i y=$figpos_y+$ind
       declare -i x=${right_per_y[ind]}+$figpos_x+1
-      if [[ ${gamearea[y*w_game+x]} == "█" ]]; then
+      if [[ ${gamearea[y*w_game+x]} =~ █ ]]; then
         isgliding='false'
       fi
     done
@@ -217,7 +225,7 @@ rotate() {
       local abs_x abs_y
       abs_x=$figpos_x+$new_x
       abs_y=$figpos_y+$x_new_y
-      if [[ ${fixedfigsarea[abs_y*w_game+abs_x]} == "█" || $abs_x -gt 15 ]]; then
+      if [[ ${fixedfigsarea[abs_y*w_game+abs_x]} =~ █ || $abs_x -gt 15 ]]; then
         can_rotate='false'
       fi
     done
@@ -238,7 +246,7 @@ checkline() {
   for ((y=19; y >= 0; y--)); do
   local is_full='true'
     for x in {0..15}; do
-      if [[ ${fixedfigsarea[y*w_game+x]} != "█" ]]; then
+      if [[ ! ${fixedfigsarea[y*w_game+x]} =~ █ ]]; then
         is_full='false'
       fi
     done
@@ -257,7 +265,7 @@ checkline() {
 
 check_endgame() {
   for x in {0..15}; do
-    if [[ ${fixedfigsarea[0*w_game+x]} == "█" ]]; then
+    if [[ ${fixedfigsarea[0*w_game+x]} =~ █ ]]; then
       endgame='true'
     fi
   done
@@ -268,7 +276,7 @@ down() {
   declare -ai bottom_per_x
   for ((y=0; y < fig_length_y; y++)); do
     for ((x=0; x < fig_length_x; x++)); do
-      if [[ ${fig[y*w_fig+x]} == "█" ]]; then
+      if [[ ${fig[y*w_fig+x]} =~ █ ]]; then
         bottom_per_x[x]=$y
       fi
     done
@@ -277,7 +285,7 @@ down() {
   for ((ind=0;ind < ${#bottom_per_x[@]}; ind++)); do
     declare -i y=${bottom_per_x[ind]}+$figpos_y+1
     declare -i x=$figpos_x+$ind
-    if [[ ${gamearea[y*w_game+x]} == "█" ]]; then
+    if [[ ${gamearea[y*w_game+x]} =~ █ ]]; then
       isfalling='false'
     fi
   done
@@ -298,7 +306,7 @@ printfig() {
   for ((y=0; y < fig_length_y; y++)); do
     declare -i abs_x=$figpos_x
     for ((x=0; x < fig_length_x; x++)); do
-      if [[ ${fig[y*w_fig+x]} == "█" ]]; then
+      if [[ ${fig[y*w_fig+x]} =~ █ ]]; then
         gamearea[abs_y*w_game+abs_x]="${fig[y*w_fig+x]}"
       fi
       (( abs_x++ ))
@@ -316,7 +324,7 @@ displaygame() {
   for y in {0..19}; do
     echo -n "░░░░░░░░░░░░░░░░░░░▒"
     for x in {0..15}; do
-      echo -n "${gamearea[y*w_game+x]}"
+      echo -n -e "${gamearea[y*w_game+x]}"
     done
     echo "▒░░░░░░░░░░░░░░░░░░░"
   done
@@ -334,6 +342,15 @@ refresh() {
   displaygame
 }
 
+pause() {
+  while true; do
+    read -r -s -n 1 input
+    case $input in
+      p) break;;
+    esac
+  done
+}
+
 play(){
   while true; do
     read -r -s -n 1 -t 0.7 input
@@ -342,6 +359,7 @@ play(){
       d) right;;
       s) bottom;;
       w) rotate;;
+      p) echo; echo "Game paused"; pause;;
     esac
     down
     if $endgame; then
